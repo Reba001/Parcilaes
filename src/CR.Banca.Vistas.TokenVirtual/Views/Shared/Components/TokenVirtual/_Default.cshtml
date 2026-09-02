@@ -1,0 +1,28 @@
+@model CR.Banca.Vistas.TokenVirtual.Models.TokenVirtualViewModel
+
+@*
+    Reemplaza al layout base de TokenVirtual.ascx (usado también para BiEnLinea_Perfil,
+    BiEnLinea, BiBanking y Westrust_ACH: ver TokenVirtualViewComponent para el porqué).
+    El UpdatePanel/ScriptManager de WebForms se reemplaza por el fetch de token-virtual.js.
+*@
+<div id="@Model.ContainerId" class="token-virtual"
+     data-validar-url="@Model.ValidarUrl"
+     data-on-success="@Model.OnSuccessCallback"
+     data-on-cancel="@Model.OnCancelCallback">
+
+    @if (Model.MostrarEtiquetaIngresarToken)
+    {
+        <label id="lbl_IngresarToken" class="@Model.LabelCssClass">@Model.LabelIngresarTokenTexto</label>
+    }
+
+    <input type="text" id="txt_TokenVirtual" class="@Model.InputCssClass"
+           maxlength="@Model.InputMaxLength" placeholder="@Model.InputPlaceholder" />
+
+    <button type="button" id="btn_TokenVirtualIngresar" class="@Model.BotonIngresarCssClass"
+            data-token-action="ingresar" disabled="@(!Model.BotonIngresarHabilitado)">@Model.BotonIngresarTexto</button>
+
+    <button type="button" id="btn_TokenVirtualCancelar" class="@Model.BotonCancelarCssClass"
+            data-token-action="cancelar">@Model.BotonCancelarTexto</button>
+
+    <span id="lbl_MsjError" class="@Model.ErrorCssClass" style="display:none;"></span>
+</div>
