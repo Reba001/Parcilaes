@@ -12,14 +12,4 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!--
-      TODO: ajustar esta referencia a la ruta/paquete real donde vive tu lógica de negocio
-      ya portada a .NET 8 (namespace CR.Banca.Modelos.Token.TokenVirtual: LogicaTokenVirtual,
-      Respuesta<T>, Result_Type). Reemplazá el ProjectReference por el que corresponda en tu
-      solución (o por un PackageReference si la publicás como paquete NuGet).
-    -->
-    <ProjectReference Include="..\CR.Banca.Modelos.Token.TokenVirtual\CR.Banca.Modelos.Token.TokenVirtual.csproj" />
-  </ItemGroup>
-
 </Project>

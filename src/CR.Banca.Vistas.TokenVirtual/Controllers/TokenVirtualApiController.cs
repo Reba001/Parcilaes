@@ -1,11 +1,12 @@
-using CR.Banca.Modelos.Token.TokenVirtual;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CR.Banca.Vistas.TokenVirtual.Controllers;
 
 /// <summary>
 /// Reemplaza a btn_TokenVirtualIngresar_Click del code-behind original. Antes viajaba por un
-/// postback parcial del UpdatePanel; ahora lo invoca el fetch de wwwroot/js/token-virtual.js.
+/// postback parcial del UpdatePanel; ahora lo invoca el fetch de wwwroot/js/token-virtual.js, y la
+/// validación en sí se delega al servicio REST "api/TokenVirtual/ValidarOTP" en vez de la DLL
+/// LogicaTokenVirtual.
 /// </summary>
 [ApiController]
 [Route("api/token-virtual")]
@@ -14,11 +15,11 @@ public class TokenVirtualApiController : ControllerBase
     private const string MensajeTokenIncorrecto = "Número de token incorrecto.";
     private const string MensajeErrorGenerico = "Ha ocurrido un error, intentelo mas tarde por favor!";
 
-    private readonly LogicaTokenVirtual logicaToken;
+    private readonly TokenVirtualApiClient tokenVirtualApiClient;
 
-    public TokenVirtualApiController(LogicaTokenVirtual logicaToken)
+    public TokenVirtualApiController(TokenVirtualApiClient tokenVirtualApiClient)
     {
-        this.logicaToken = logicaToken;
+        this.tokenVirtualApiClient = tokenVirtualApiClient;
     }
 
     public record ValidarOtpRequest(string? CodigoOtp);
@@ -26,7 +27,9 @@ public class TokenVirtualApiController : ControllerBase
     public record ValidarOtpResponse(bool Resultado, string? MensajeResultado);
 
     [HttpPost("validar")]
-    public ActionResult<ValidarOtpResponse> Validar([FromBody] ValidarOtpRequest request)
+    public async Task<ActionResult<ValidarOtpResponse>> Validar(
+        [FromBody] ValidarOtpRequest request,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request?.CodigoOtp))
         {
@@ -35,14 +38,7 @@ public class TokenVirtualApiController : ControllerBase
 
         try
         {
-            // [tokensms][codigo para que no valide con DEVEL los tokens fisicos]
-            if (logicaToken.tieneTokenFisico())
-            {
-                HttpContext.Session.EstablecerValidarToken(true);
-                return Ok(new ValidarOtpResponse(true, null));
-            }
-
-            Respuesta<bool> respuesta = logicaToken.validarOTP(request.CodigoOtp, Result_Type.code);
+            var respuesta = await tokenVirtualApiClient.ValidarOtpAsync(request.CodigoOtp, cancellationToken);
 
             HttpContext.Session.EstablecerValidarToken(respuesta.Resultado);
 
@@ -50,7 +46,7 @@ public class TokenVirtualApiController : ControllerBase
                 respuesta.Resultado,
                 respuesta.Resultado ? null : (respuesta.MensajeResultado ?? MensajeTokenIncorrecto)));
         }
-        catch
+        catch (Exception)
         {
             return Ok(new ValidarOtpResponse(false, MensajeErrorGenerico));
         }
