@@ -1,0 +1,33 @@
+@model CR.Banca.Vistas.TokenVirtual.Models.TokenVirtualViewModel
+
+@*
+    Reemplaza a dibujar_uxToken_ConexionRegional_Login / dibujar_uxToken_ConexionRegional
+    (eran el mismo método duplicado en el code-behind original). El <form> se mantiene para
+    conservar el "Enter para enviar" del HtmlForm original (DefaultButton); token-virtual.js
+    intercepta el submit y valida por fetch en lugar de hacer un postback completo.
+*@
+<div id="@Model.ContainerId" class="token-virtual token-virtual--conexion-regional"
+     data-validar-url="@Model.ValidarUrl"
+     data-on-success="@Model.OnSuccessCallback"
+     data-on-cancel="@Model.OnCancelCallback">
+
+    <div id="tokenImagen" class="tokenMargen1">
+        @if (!string.IsNullOrWhiteSpace(Model.ImagenTokenUrl))
+        {
+            <img src="@Model.ImagenTokenUrl" width="49" height="57" alt="" />
+        }
+    </div>
+
+    <form id="ingresaTokenForm" name="ingresaTokenForm" method="post">
+        <input type="text" id="txt_TokenVirtual" class="@Model.InputCssClass"
+               maxlength="@Model.InputMaxLength" placeholder="@Model.InputPlaceholder" />
+        <div class="clear"></div>
+        <button type="submit" id="btn_TokenVirtualIngresar" class="@Model.BotonIngresarCssClass"
+                data-token-action="ingresar" disabled="@(!Model.BotonIngresarHabilitado)">@Model.BotonIngresarTexto</button>
+        <p><span style="font-family: 'Roboto-Bold';">Estimado usuario:</span><br />
+            Para continuar el acceso a Conexión Regional <br /> debe ingresar un número de token.</p>
+    </form>
+
+    <div class="clear"></div>
+    <span id="lbl_MsjError" class="@Model.ErrorCssClass" style="display:none;"></span>
+</div>

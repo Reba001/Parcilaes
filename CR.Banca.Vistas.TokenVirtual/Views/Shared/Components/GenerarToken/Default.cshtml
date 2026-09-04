@@ -1,0 +1,30 @@
+@model CR.Banca.Vistas.TokenVirtual.Models.GenerarTokenViewModel
+
+@*
+    Reemplaza a GenerarToken.ascx. El toggle expandir/colapsar (data-toggle="collapse") lo sigue
+    manejando el JS de Bootstrap del host; generar-token.js solo fuerza a que el panel quede
+    expandido cuando hay un mensaje que mostrar, igual que hacía btn_GenerarSMS_Click /
+    btn_GenerarEmail_Click alternando las clases "collapse" / "collapse in" en el code-behind.
+*@
+<div id="@Model.ContainerId" class="generar-token" data-generar-url="@Model.GenerarUrl">
+
+    <button type="button" id="tokensms_btncollapse" class="btn btn-info tokensms-generar-button collapsed"
+            data-toggle="collapse" data-target="#generartoken_tokensms_show_hide_token" aria-expanded="false">
+        Generar nuevo TOKEN
+    </button>
+
+    <div id="generartoken_tokensms_show_hide_token" class="collapse" aria-expanded="false">
+        <p class="tokensms-texto">
+            Puedes generar un nuevo TOKEN utilizando tus métodos alternativos, si deseas más información presiona
+            <a href="" target="_blank">aquí</a>
+        </p>
+
+        <button type="button" id="btn_GenerarSMS" class="@Model.BotonSmsCssClass"
+                data-token-generar="sms" disabled="@(!Model.BotonSmsHabilitado)">@Model.BotonSmsTexto</button>
+
+        <button type="button" id="btn_GenerarEmail" class="@Model.BotonEmailCssClass"
+                data-token-generar="email" disabled="@(!Model.BotonEmailHabilitado)">@Model.BotonEmailTexto</button>
+
+        <span id="lbl_Mensaje" class="@Model.MensajeCssClass">@Model.Mensaje</span>
+    </div>
+</div>
