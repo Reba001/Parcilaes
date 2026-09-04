@@ -8,15 +8,19 @@ namespace CR.Banca.Vistas.TokenVirtual;
 /// (incluyendo el caso de token físico que antes resolvía "tieneTokenFisico") ahora vive del lado
 /// del servicio REST, así que este cliente solo reenvía los datos y relaya la respuesta.
 ///
-/// TODO: las rutas de GenerarOTP y MetodosEnvio son un supuesto razonable (simétrico a
-/// ValidarOTP) porque el contrato real de esos dos endpoints no fue provisto todavía — ajustalas
-/// (y los nombres de campo de los records) al contrato real del servicio.
+/// TODO: las rutas de GenerarOTP, MetodosEnvio, TieneTokenAsignado, TieneTokenFisico y EnviarOTP
+/// son un supuesto razonable (simétrico a ValidarOTP) porque el contrato real de esos endpoints
+/// no fue provisto todavía — ajustalas (y los nombres de campo de los records) al contrato real
+/// del servicio.
 /// </summary>
 public class TokenVirtualApiClient
 {
     private const string RutaValidarOtp = "api/TokenVirtual/ValidarOTP";
     private const string RutaGenerarOtp = "api/TokenVirtual/GenerarOTP";
     private const string RutaMetodosEnvio = "api/TokenVirtual/MetodosEnvio";
+    private const string RutaTieneTokenAsignado = "api/TokenVirtual/TieneTokenAsignado";
+    private const string RutaTieneTokenFisico = "api/TokenVirtual/TieneTokenFisico";
+    private const string RutaEnviarOtp = "api/TokenVirtual/EnviarOTP";
 
     private readonly HttpClient httpClient;
 
@@ -74,5 +78,40 @@ public class TokenVirtualApiClient
     {
         var respuesta = await httpClient.GetFromJsonAsync<MetodosEnvioOtpResponse>(RutaMetodosEnvio, cancellationToken);
         return respuesta ?? new MetodosEnvioOtpResponse(false, false, false);
+    }
+
+    public record TieneTokenAsignadoResponse(bool TieneTokenAsignado);
+
+    /// <summary>Reemplaza a LogicaTokenVirtual.tieneTokenAsignado(), usado en Default.aspx.cs para
+    /// decidir si se muestran los controles de Token Virtual.</summary>
+    public async Task<bool> TieneTokenAsignadoAsync(CancellationToken cancellationToken)
+    {
+        var respuesta = await httpClient.GetFromJsonAsync<TieneTokenAsignadoResponse>(RutaTieneTokenAsignado, cancellationToken);
+        return respuesta?.TieneTokenAsignado ?? false;
+    }
+
+    public record TieneTokenFisicoResponse(bool TieneTokenFisico);
+
+    /// <summary>Reemplaza a LogicaTokenVirtual.tieneTokenFisico().</summary>
+    public async Task<bool> TieneTokenFisicoAsync(CancellationToken cancellationToken)
+    {
+        var respuesta = await httpClient.GetFromJsonAsync<TieneTokenFisicoResponse>(RutaTieneTokenFisico, cancellationToken);
+        return respuesta?.TieneTokenFisico ?? false;
+    }
+
+    public record EnviarOtpRemotoResponse(bool Resultado, string? MensajeResultado);
+
+    /// <summary>Reemplaza a LogicaTokenVirtual.enviarOTP(Result_Type.code) (envío por el canal
+    /// por defecto del usuario, a diferencia de GenerarOtpAsync que exige elegir sms/email).</summary>
+    public async Task<EnviarOtpRemotoResponse> EnviarOtpAsync(CancellationToken cancellationToken)
+    {
+        using var respuestaHttp = await httpClient.PostAsync(RutaEnviarOtp, new StringContent(string.Empty), cancellationToken);
+
+        respuestaHttp.EnsureSuccessStatusCode();
+
+        var respuesta = await respuestaHttp.Content.ReadFromJsonAsync<EnviarOtpRemotoResponse>(
+            cancellationToken: cancellationToken);
+
+        return respuesta ?? new EnviarOtpRemotoResponse(false, null);
     }
 }
