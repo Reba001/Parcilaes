@@ -1,58 +1,6 @@
-using System.IO.Compression;
 using System.Text;
 
 namespace Parcilaes.FileHex;
-
-/// <summary>
-/// Reemplazo de la clase VB6 clsCompress. Implemente su propia versión si
-/// necesita compatibilidad con el formato original.
-/// </summary>
-public interface IFileCompressor
-{
-    /// <summary>Comprime <paramref name="sourceFile"/> dentro de <paramref name="archiveFile"/>.</summary>
-    bool AddFile(string archiveFile, string sourceFile);
-
-    /// <summary>Extrae el archivo comprimido y devuelve la ruta del archivo extraído ("" si falla).</summary>
-    string Extract(string archiveFile);
-}
-
-/// <summary>Implementación por defecto basada en ZIP (System.IO.Compression).</summary>
-public sealed class ZipFileCompressor : IFileCompressor
-{
-    public bool AddFile(string archiveFile, string sourceFile)
-    {
-        try
-        {
-            if (File.Exists(archiveFile)) File.Delete(archiveFile);
-            using var zip = ZipFile.Open(archiveFile, ZipArchiveMode.Create);
-            zip.CreateEntryFromFile(sourceFile, Path.GetFileName(sourceFile), CompressionLevel.Optimal);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public string Extract(string archiveFile)
-    {
-        try
-        {
-            using var zip = ZipFile.OpenRead(archiveFile);
-            var entry = zip.Entries.FirstOrDefault();
-            if (entry is null) return "";
-
-            var dir = Path.GetDirectoryName(Path.GetFullPath(archiveFile))!;
-            var target = Path.GetFullPath(Path.Combine(dir, Path.GetFileName(entry.FullName)));
-            entry.ExtractToFile(target, overwrite: true);
-            return target;
-        }
-        catch
-        {
-            return "";
-        }
-    }
-}
 
 /// <summary>
 /// Conversión de clsFileHex (VB6). Codifica un archivo binario como "hexadecimal"
@@ -62,15 +10,6 @@ public class FileHex
 {
     // VB6 usaba Asc/Chr con la página ANSI; Latin1 mapea byte <-> char 1:1.
     private static readonly Encoding Latin1 = Encoding.Latin1;
-
-    private readonly IFileCompressor _compressor;
-
-    public FileHex() : this(new ZipFileCompressor()) { }
-
-    public FileHex(IFileCompressor compressor)
-    {
-        _compressor = compressor;
-    }
 
     /// <summary>Valor base sumado a cada nibble (por defecto 61, "=" después de "&lt;").</summary>
     public int Base { get; set; } = 61;
@@ -84,8 +23,12 @@ public class FileHex
         string fileTemp = compress ? FileName + ".cmp" : FileName;
         try
         {
-            if (compress && !_compressor.AddFile(fileTemp, FileName))
-                throw new InvalidOperationException("Couldn't use compression");
+            if (compress)
+            {
+                var compressor = new FileCompress { FileName = fileTemp };
+                if (!compressor.FileAdd(FileName))
+                    throw new InvalidOperationException("Couldn't use compression");
+            }
 
             byte[] source = File.ReadAllBytes(fileTemp);
             var dest = new byte[source.Length * 2 + 2];
@@ -133,7 +76,13 @@ public class FileHex
 
         if (compress)
         {
-            string extracted = _compressor.Extract(fileTemp);
+            var compressor = new FileCompress
+            {
+                ExtractOverWrite = true,
+                ExtractSelectNewer = false,
+                FileName = fileTemp
+            };
+            string extracted = compressor.FileExtract();
             if (extracted.Length == 0)
                 throw new InvalidOperationException("Couldn't decompress");
 
